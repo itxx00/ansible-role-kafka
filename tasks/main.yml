@@ -1,0 +1,65 @@
+---
+
+- name: install kafka package
+  yum: name=kafka state=installed
+
+- name: Create directory for kafka log files
+  file:
+    path: '{{ kafka_log_dirs }}'
+    state: directory
+    group: '{{ kafka_group }}'
+    owner: '{{ kafka_user }}'
+  tags:
+    - kafka_dirs
+
+- name: Template configuration file to server.properties
+  template:
+    src: server.properties.j2
+    dest: '{{ kafka_dir }}/config/server.properties'
+  notify:
+    - Restart kafka service
+  tags:
+    - kafka_config
+
+- name: Template configuration file to producer.properties
+  template:
+    src: producer.properties.j2
+    dest: '{{ kafka_dir }}/config/producer.properties'
+  notify:
+    - Restart kafka service
+  tags:
+    - kafka_config
+
+- name: Template configuration file to consumer.properties
+  template:
+    src: consumer.properties.j2
+    dest: '{{ kafka_dir }}/config/consumer.properties'
+  notify:
+    - Restart kafka service
+  tags:
+    - kafka_config
+
+- name: Configure sysconfig/kakfa
+  template: src=kafka.sysconfig.j2 dest=/etc/sysconfig/kafka
+  notify:
+    - Restart kafka service
+  tags:
+    - kafka_config
+
+#- name: Template kafka systemd service file to /usr/lib/systemd/system/kafka.service
+#  template:
+#    src: kafka.service.j2
+#    dest: /usr/lib/systemd/system/kafka.service
+#  notify:
+#    - Reload kafka systemd
+#    - Restart kafka service
+#  tags:
+#    - kafka_service
+#
+- name: Install and start the kafka service
+  service:
+    name: kafka
+    state: started
+    enabled: yes
+  tags:
+    - kafka_service
